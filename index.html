@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Clarity"/>
+<title>Clarity</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#08111f; --surface:#111c2e; --border:#1e2f47;
+    --text:#e8f0fe; --muted:#4a6080; --accent:#5ee7c4;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+  body{overflow-x:hidden;}
+  ::-webkit-scrollbar{width:3px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+
+  #app{max-width:680px;margin:0 auto;padding:24px 16px 100px;}
+
+  .brand{font-family:'DM Serif Display',serif;font-size:36px;letter-spacing:-1px;}
+  .brand span{color:var(--accent);}
+  .date-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+  .today-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 20px;margin-bottom:22px;}
+  .today-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .today-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  .today-count{font-size:13px;font-weight:700;color:var(--accent);}
+  .prog-track{height:8px;background:#0a1828;border-radius:99px;overflow:hidden;}
+  .prog-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1);box-shadow:0 0 12px currentColor;}
+  .prog-pct{font-size:11px;color:var(--muted);margin-top:5px;}
+
+  .nav{display:flex;gap:6px;margin-bottom:18px;}
+  .nav-btn{flex:1;padding:9px 4px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+  .nav-btn.active{background:#0d2140;border-color:#3a7fd5;color:#60a5fa;}
+
+  .search-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:16px;}
+  .search-input::placeholder{color:var(--muted);}
+
+  .cat-pills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;}
+  .cat-pill{font-size:11px;font-weight:700;border-radius:20px;padding:4px 12px;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s;}
+
+  .fab{position:fixed;bottom:24px;right:20px;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#60a5fa);border:none;font-size:28px;color:#08111f;font-weight:700;cursor:pointer;box-shadow:0 8px 32px #5ee7c444;display:flex;align-items:center;justify-content:center;transition:transform .2s;z-index:100;}
+  .fab:active{transform:scale(.93);}
+
+  .overlay{position:fixed;inset:0;background:#00000088;z-index:200;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s;}
+  .modal{background:#0e1a2e;border-radius:24px 24px 0 0;width:100%;max-width:680px;padding:24px 20px 40px;max-height:92vh;overflow-y:auto;animation:slideUp .3s cubic-bezier(.4,0,.2,1);border-top:1px solid var(--border);}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:20px;}
+  .modal-close{float:right;background:var(--border);border:none;border-radius:8px;padding:4px 10px;color:var(--muted);cursor:pointer;font-size:16px;margin-top:-4px;}
+
+  .form-group{margin-bottom:16px;}
+  .form-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;}
+  .form-input,.form-select,.form-textarea{width:100%;background:#0a1525;border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+  .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#3a7fd5;}
+  .form-textarea{resize:vertical;min-height:70px;}
+  .form-select option{background:#0a1525;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+
+  /* Calendar */
+  input[type="date"]{color-scheme:dark;cursor:pointer;}
+  input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7) sepia(1) saturate(3) hue-rotate(130deg);cursor:pointer;width:18px;height:18px;}
+
+  .voice-row{display:flex;gap:8px;}
+  .voice-row .form-input{flex:1;}
+  .mic-btn{background:#a78bfa22;border:1px solid #a78bfa44;border-radius:10px;padding:11px 16px;font-size:20px;cursor:pointer;color:#a78bfa;transition:all .15s;white-space:nowrap;}
+  .mic-btn.recording{background:#ef444422;border-color:#ef4444;color:#ef4444;animation:pulse 1s infinite;}
+
+  .toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .toggle-track{width:40px;height:22px;border-radius:99px;background:var(--border);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+  .toggle-track.on{background:var(--accent);}
+  .toggle-thumb{width:18px;height:18px;border-radius:99px;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;}
+  .toggle-track.on .toggle-thumb{left:20px;}
+  .toggle-label{font-size:13px;color:#94a3b8;}
+
+  .img-upload-btn{background:#0a1525;border:1px dashed var(--border);border-radius:10px;padding:10px 16px;color:var(--muted);cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:6px;}
+  .img-preview{height:50px;border-radius:8px;margin-left:8px;vertical-align:middle;}
+
+  .btn-primary{width:100%;background:linear-gradient(135deg,var(--accent),#60a5fa);border:none;border-radius:12px;padding:13px;color:#08111f;font-weight:700;font-size:15px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;}
+  .btn-secondary{width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;padding:11px;color:var(--muted);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+  /* Milestones */
+  .ms-section{margin-bottom:16px;}
+  .ms-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .ms-header .form-label{margin-bottom:0;}
+  .add-ms-btn{background:#a78bfa22;border:1px solid #a78bfa44;border-radius:8px;padding:5px 12px;color:#a78bfa;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .ms-item{background:#0a1525;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+  .ms-item-title{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+  .remove-ms{background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px;}
+  .ms-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .ms-input{width:100%;background:#111c2e;border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
+  .ms-select{width:100%;background:#111c2e;border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
+  .ms-select option{background:#111c2e;}
+  .ms-note{width:100%;background:#111c2e;border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;min-height:50px;}
+
+  hr.divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+
+  /* Task card */
+  .task-card{background:var(--surface);border-radius:16px;border:1px solid var(--border);border-left-width:4px;padding:14px 16px;margin-bottom:10px;transition:opacity .2s;}
+  .task-card.done{opacity:.45;background:var(--bg);}
+  .task-top{display:flex;gap:12px;align-items:flex-start;}
+  .check-btn{width:26px;height:26px;min-width:26px;border-radius:8px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;transition:all .2s;margin-top:1px;}
+  .task-title{font-size:15px;font-weight:600;color:var(--text);flex:1;line-height:1.3;}
+  .task-card.done .task-title{text-decoration:line-through;color:var(--muted);}
+  .task-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px;align-items:center;}
+  .tag{font-size:10px;font-weight:700;border-radius:20px;padding:2px 9px;letter-spacing:.3px;}
+  .task-note{margin-top:8px;font-size:12px;color:#64748b;font-style:italic;background:#0a1525;border-radius:8px;padding:7px 10px;line-height:1.5;}
+  .task-img{margin-top:8px;max-width:100%;border-radius:10px;max-height:160px;object-fit:cover;cursor:pointer;}
+  .task-actions{display:flex;gap:6px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap;}
+  .act-btn{background:#0a1525;border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:#94a3b8;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .act-btn.today-on{background:#0d2f1a;border-color:#22c55e;color:#4ade80;}
+  .inline-prog{margin-top:8px;}
+  .inline-prog .prog-track{height:5px;}
+
+  /* Milestones on card */
+  .ms-block{margin-top:10px;border-top:1px solid var(--border);padding-top:10px;}
+  .ms-block-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+  .ms-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;padding:7px 10px;background:#0a1525;border-radius:8px;}
+  .ms-check{width:18px;height:18px;min-width:18px;border-radius:5px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;transition:all .2s;margin-top:1px;flex-shrink:0;}
+  .ms-row-content{flex:1;min-width:0;}
+  .ms-row-title{font-size:13px;color:var(--text);line-height:1.3;}
+  .ms-row-title.done{text-decoration:line-through;color:var(--muted);}
+  .ms-row-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px;}
+  .ms-row-note{font-size:11px;color:#64748b;font-style:italic;margin-top:3px;}
+
+  .section-head{display:flex;align-items:center;gap:10px;margin:20px 0 12px;}
+  .section-bar{width:4px;height:24px;border-radius:99px;}
+  .section-title{font-family:'DM Serif Display',serif;font-size:18px;}
+  .section-ct{font-size:11px;color:var(--muted);margin-left:auto;}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px;line-height:1.6;}
+  .empty-icon{font-size:48px;display:block;margin-bottom:12px;}
+
+  .lightbox{position:fixed;inset:0;background:#000000cc;z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s;}
+  .lightbox img{max-width:95vw;max-height:90vh;border-radius:12px;}
+
+  .backup-bar{display:flex;gap:8px;margin-bottom:20px;}
+  .backup-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+  .backup-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a3a2a;border:1px solid #22c55e;color:#4ade80;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:999;animation:fadeIn .2s;white-space:nowrap;}
+
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const CATS=[
+  {id:'teaching', label:'Teaching',  emoji:'🎓',color:'#FF6B6B',bg:'#FF6B6B22'},
+  {id:'reading',  label:'Reading',   emoji:'📚',color:'#4ECDC4',bg:'#4ECDC422'},
+  {id:'research', label:'Research',  emoji:'🔬',color:'#A78BFA',bg:'#A78BFA22'},
+  {id:'selfcare', label:'Self-Care', emoji:'🌿',color:'#6EE7B7',bg:'#6EE7B722'},
+  {id:'chores',   label:'Chores',    emoji:'🏠',color:'#FCD34D',bg:'#FCD34D22'},
+  {id:'work',     label:'Work',      emoji:'💼',color:'#60A5FA',bg:'#60A5FA22'},
+  {id:'personal', label:'Personal',  emoji:'✨',color:'#F9A8D4',bg:'#F9A8D422'},
+  {id:'service',  label:'Service',   emoji:'🤝',color:'#FB923C',bg:'#FB923C22'},
+  {id:'phd',      label:'Ph.D.',     emoji:'🎯',color:'#E879F9',bg:'#E879F922'},
+  {id:'profdev',  label:'Prof. Dev.',emoji:'📈',color:'#34D399',bg:'#34D39922'},
+  {id:'other',    label:'Other',     emoji:'📌',color:'#94A3B8',bg:'#94A3B822'},
+];
+const PRIS=[
+  {id:'high',  label:'High',  color:'#EF4444'},
+  {id:'medium',label:'Medium',color:'#F59E0B'},
+  {id:'low',   label:'Low',   color:'#10B981'},
+];
+const catMap=Object.fromEntries(CATS.map(c=>[c.id,c]));
+const priMap=Object.fromEntries(PRIS.map(p=>[p.id,p]));
+
+let state={tasks:[],todayIds:[],view:'Today',filterCat:'all',search:'',showForm:false,editId:null,lightbox:null};
+let formMilestones=[];
+let formScreenshot='';
+let todayToggleVal=true;
+let recognition=null;
+
+function load(){
+  try{state.tasks=JSON.parse(localStorage.getItem('clarity_v6'))||[];}catch{}
+  try{state.todayIds=JSON.parse(localStorage.getItem('clarity_today_v6'))||[];}catch{}
+}
+function save(){
+  try{localStorage.setItem('clarity_v6',JSON.stringify(state.tasks));}catch{}
+  try{localStorage.setItem('clarity_today_v6',JSON.stringify(state.todayIds));}catch{}
+}
+function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function fmtDate(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function daysUntil(d){if(!d)return null;return Math.ceil((new Date(d+'T00:00:00')-new Date())/86400000);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function render(){document.getElementById('app').innerHTML=buildApp();bindEvents();}
+
+function buildApp(){
+  const today=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const todayTasks=state.tasks.filter(t=>state.todayIds.includes(t.id));
+  const doneToday=todayTasks.filter(t=>t.done).length;
+  const pct=todayTasks.length?Math.round(doneToday/todayTasks.length*100):0;
+
+  let h=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">
+    <div><div class="brand">Clar<span>i</span>ty</div><div class="date-sub">${esc(today)}</div></div>
+  </div>`;
+
+  if(todayTasks.length>0){
+    h+=`<div class="today-card">
+      <div class="today-header"><span class="today-label">Today's Progress</span><span class="today-count">${doneToday}/${todayTasks.length} done</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:#5ee7c4;color:#5ee7c4"></div></div>
+      <div class="prog-pct">${pct}% complete</div>
+    </div>`;
+  }
+
+  h+=`<div class="nav">`;
+  ['Today','All','Categories'].forEach(v=>{
+    h+=`<button class="nav-btn${state.view===v?' active':''}" data-view="${v}">${v==='All'?'All Tasks':v}</button>`;
+  });
+  h+=`</div>`;
+  h+=`<div class="backup-bar">
+    <button class="backup-btn" id="exportBtn">⬇️ Export Backup</button>
+    <button class="backup-btn" id="importBtn">⬆️ Import Backup</button>
+    <input type="file" id="importFile" accept=".json" style="display:none"/>
+  </div>`;
+  h+=`<input class="search-input" id="searchInput" placeholder="🔍 Search tasks..." value="${esc(state.search)}"/>`;
+
+  if(state.view!=='Today'){
+    h+=`<div class="cat-pills"><button class="cat-pill" style="background:${state.filterCat==='all'?'#334155':'transparent'};color:${state.filterCat==='all'?'#f1f5f9':'#64748b'}" data-cat="all">All</button>`;
+    CATS.forEach(c=>{const a=state.filterCat===c.id;h+=`<button class="cat-pill" style="background:${a?c.color:c.bg};color:${a?'#fff':c.color}" data-cat="${c.id}">${c.emoji} ${c.label}</button>`;});
+    h+=`</div>`;
+  }
+
+  if(state.showForm)h+=buildForm();
+  h+=buildList();
+  h+=`<button class="fab" id="fabBtn">${state.showForm?'✕':'＋'}</button>`;
+  if(state.lightbox)h+=`<div class="lightbox" id="lightbox"><img src="${state.lightbox}"/></div>`;
+  return h;
+}
+
+function buildForm(){
+  const isEdit=!!state.editId;
+  const task=isEdit?state.tasks.find(t=>t.id===state.editId):null;
+  const tv=(k,d='')=>task?(task[k]||d):d;
+  const catOpts=CATS.map(c=>`<option value="${c.id}"${tv('category','other')===c.id?' selected':''}>${c.emoji} ${c.label}</option>`).join('');
+  const priOpts=PRIS.map(p=>`<option value="${p.id}"${tv('priority','medium')===p.id?' selected':''}>${p.label}</option>`).join('');
+  const msHtml=formMilestones.map((ms,i)=>buildMsEditor(ms,i)).join('');
+
+  return`<div class="overlay" id="formOverlay">
+  <div class="modal">
+    <div class="modal-title">${isEdit?'Edit Task':'New Task'}<button class="modal-close" id="closeForm">✕</button></div>
+
+    <div class="form-group">
+      <label class="form-label">Task Title</label>
+      <div class="voice-row">
+        <input class="form-input" id="fTitle" placeholder="What needs to be done?" value="${esc(tv('title'))}"/>
+        <button class="mic-btn" id="micBtn">🎙</button>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div><label class="form-label">Category</label><select class="form-select" id="fCat">${catOpts}</select></div>
+      <div><label class="form-label">Priority</label><select class="form-select" id="fPri">${priOpts}</select></div>
+      <div><label class="form-label">Due Date</label><input class="form-input" type="date" id="fDue" value="${esc(tv('dueDate'))}" min="${todayStr()}"/></div>
+      <div><label class="form-label">Est. Time (mins)</label><input class="form-input" type="number" id="fMins" placeholder="e.g. 30" value="${esc(tv('estimatedMins'))}" min="0"/></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="fNote" placeholder="Additional notes...">${esc(tv('voiceNote'))}</textarea>
+    </div>
+
+    <hr class="divider"/>
+    <div class="ms-section">
+      <div class="ms-header">
+        <label class="form-label">🏁 Milestones</label>
+        <button class="add-ms-btn" id="addMsBtn">＋ Add Milestone</button>
+      </div>
+      <div id="msContainer">${msHtml}</div>
+    </div>
+    <hr class="divider"/>
+
+    <div class="form-group">
+      <label class="form-label">Screenshot / Image</label>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+        <button class="img-upload-btn" id="imgUploadBtn">📷 ${tv('screenshot')?'Change':'Add'} Image</button>
+        ${tv('screenshot')?`<img class="img-preview" src="${tv('screenshot')}" id="imgPreview"/>`:'<span id="imgPreview"></span>'}
+        <input type="file" accept="image/*" id="imgFile" style="display:none"/>
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-track${!isEdit?' on':''}" id="todayToggle"><div class="toggle-thumb"></div></div>
+      <span class="toggle-label">Add to Today's list</span>
+    </div>
+    <input type="hidden" id="fScreenshot" value="${esc(tv('screenshot'))}"/>
+    <input type="hidden" id="fAddToday" value="${!isEdit?'1':'0'}"/>
+
+    <button class="btn-primary" id="saveBtn">💾 Save Task</button>
+    <button class="btn-secondary" id="cancelBtn">Cancel</button>
+  </div></div>`;
+}
+
+function buildMsEditor(ms,i){
+  const priOpts=PRIS.map(p=>`<option value="${p.id}"${(ms.priority||'medium')===p.id?' selected':''}>${p.label}</option>`).join('');
+  return`<div class="ms-item">
+    <div class="ms-item-title">Milestone ${i+1}<button class="remove-ms" data-rms="${i}">✕</button></div>
+    <div class="ms-grid">
+      <input class="ms-input" placeholder="Milestone name" value="${esc(ms.title||'')}" data-mf="title" data-mi="${i}"/>
+      <input class="ms-input" type="date" value="${esc(ms.dueDate||'')}" min="${todayStr()}" data-mf="dueDate" data-mi="${i}"/>
+      <input class="ms-input" type="number" placeholder="Est. mins" value="${esc(ms.estimatedMins||'')}" min="0" data-mf="estimatedMins" data-mi="${i}"/>
+      <select class="ms-select" data-mf="priority" data-mi="${i}">${priOpts}</select>
+    </div>
+    <textarea class="ms-note" placeholder="Notes for this milestone..." data-mf="notes" data-mi="${i}">${esc(ms.notes||'')}</textarea>
+  </div>`;
+}
+
+function buildList(){
+  let list=state.view==='Today'?state.tasks.filter(t=>state.todayIds.includes(t.id)):[...state.tasks];
+  if(state.filterCat!=='all')list=list.filter(t=>t.category===state.filterCat);
+  if(state.search.trim()){const sq=state.search.toLowerCase();list=list.filter(t=>t.title.toLowerCase().includes(sq)||(t.voiceNote||'').toLowerCase().includes(sq));}
+
+  if(!list.length){
+    const msg=state.view==='Today'?'<span class="empty-icon">🌅</span>No tasks for today.<br>Tap <b>＋</b> to add one.':'<span class="empty-icon">✨</span>No tasks yet.<br>Tap <b>＋</b> to get started.';
+    return`<div class="empty">${msg}</div>`;
+  }
+
+  if(state.view==='Categories'&&state.filterCat==='all'){
+    let h='';
+    CATS.forEach(cat=>{
+      const items=list.filter(t=>t.category===cat.id);
+      if(!items.length)return;
+      const dc=items.filter(t=>t.done).length;
+      h+=`<div class="section-head"><div class="section-bar" style="background:${cat.color}"></div><span class="section-title" style="color:${cat.color}">${cat.emoji} ${cat.label}</span><span class="section-ct">${dc}/${items.length}</span></div>`;
+      items.forEach(t=>{h+=buildCard(t);});
+    });
+    return h;
+  }
+  return list.map(buildCard).join('');
+}
+
+function buildCard(task){
+  const cat=catMap[task.category]||catMap.other;
+  const pri=priMap[task.priority]||priMap.medium;
+  const due=daysUntil(task.dueDate);
+  const overdue=due!==null&&due<0;
+  const dueToday=due===0;
+  const isToday=state.todayIds.includes(task.id);
+  const pct=task.done?100:(task.progress||0);
+
+  let dueTag='';
+  if(task.dueDate){
+    if(overdue)dueTag=`<span class="tag" style="background:#EF444422;color:#EF4444">⚠️ ${Math.abs(due)}d overdue</span>`;
+    else if(dueToday)dueTag=`<span class="tag" style="background:#F59E0B22;color:#F59E0B">📅 Due today</span>`;
+    else dueTag=`<span class="tag" style="background:#1e293b;color:#64748b">📅 ${fmtDate(task.dueDate)}</span>`;
+  }
+
+  let msHtml='';
+  if(task.milestones&&task.milestones.length>0){
+    const msDone=task.milestones.filter(m=>m.done).length;
+    msHtml=`<div class="ms-block"><div class="ms-block-label">🏁 Milestones — ${msDone}/${task.milestones.length}</div>`;
+    task.milestones.forEach((ms,i)=>{
+      const mp=priMap[ms.priority]||priMap.medium;
+      msHtml+=`<div class="ms-row">
+        <button class="ms-check" style="border-color:${ms.done?cat.color:'#1e293b'};background:${ms.done?cat.color:'transparent'}" data-mst="${task.id}" data-msi="${i}">${ms.done?'✓':''}</button>
+        <div class="ms-row-content">
+          <div class="ms-row-title${ms.done?' done':''}">${esc(ms.title||'Milestone '+(i+1))}</div>
+          <div class="ms-row-meta">
+            <span style="font-size:10px;color:${mp.color}">${mp.label}</span>
+            ${ms.dueDate?`<span style="font-size:10px;color:#64748b">📅 ${fmtDate(ms.dueDate)}</span>`:''}
+            ${ms.estimatedMins?`<span style="font-size:10px;color:#64748b">⏱ ${ms.estimatedMins}m</span>`:''}
+          </div>
+          ${ms.notes?`<div class="ms-row-note">${esc(ms.notes)}</div>`:''}
+        </div>
+      </div>`;
+    });
+    msHtml+=`</div>`;
+  }
+
+  return`<div class="task-card${task.done?' done':''}" style="border-left-color:${cat.color}">
+    <div class="task-top">
+      <button class="check-btn" style="border-color:${task.done?cat.color:'#1e293b'};background:${task.done?cat.color:'transparent'}" data-toggle="${task.id}">${task.done?'✓':''}</button>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <span class="task-title">${esc(task.title)}</span>
+          <span class="tag" style="background:${pri.color}22;color:${pri.color};flex-shrink:0">${pri.label}</span>
+        </div>
+        <div class="task-meta">
+          <span class="tag" style="background:${cat.bg};color:${cat.color}">${cat.emoji} ${cat.label}</span>
+          ${task.estimatedMins>0?`<span style="font-size:11px;color:#64748b">⏱ ${task.estimatedMins}m</span>`:''}
+          ${dueTag}
+          ${task.screenshot?`<span style="font-size:11px;color:#60a5fa;cursor:pointer" data-lightbox="${esc(task.screenshot)}">📷</span>`:''}
+        </div>
+        ${task.estimatedMins>0?`<div class="inline-prog"><div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${cat.color};color:${cat.color}"></div></div></div>`:''}
+        ${task.voiceNote?`<div class="task-note">"${esc(task.voiceNote)}"</div>`:''}
+        ${task.screenshot?`<img class="task-img" src="${task.screenshot}" data-lightbox="${esc(task.screenshot)}" alt=""/>`:''}
+        ${msHtml}
+      </div>
+    </div>
+    <div class="task-actions">
+      <button class="act-btn${isToday?' today-on':''}" data-today="${task.id}">${isToday?'✓ Today':'＋ Today'}</button>
+      <button class="act-btn" data-edit="${task.id}">✏️ Edit</button>
+      <button class="act-btn" data-del="${task.id}">🗑</button>
+    </div>
+  </div>`;
+}
+
+function bindEvents(){
+  q('#exportBtn')?.addEventListener('click',exportBackup);
+  q('#importBtn')?.addEventListener('click',()=>q('#importFile')?.click());
+  q('#importFile')?.addEventListener('change',e=>{importBackup(e.target.files[0]);e.target.value='';});
+
+  q('#fabBtn')?.addEventListener('click',()=>{
+    if(state.showForm){closeForm();}
+    else{state.showForm=true;state.editId=null;formMilestones=[];formScreenshot='';render();}
+  });
+  qa('[data-view]').forEach(el=>el.addEventListener('click',()=>{state.view=el.dataset.view;render();}));
+  qa('[data-cat]').forEach(el=>el.addEventListener('click',()=>{state.filterCat=el.dataset.cat;render();}));
+  q('#searchInput')?.addEventListener('input',e=>{state.search=e.target.value;render();});
+
+  q('#closeForm')?.addEventListener('click',closeForm);
+  q('#cancelBtn')?.addEventListener('click',closeForm);
+  q('#formOverlay')?.addEventListener('click',e=>{if(e.target.id==='formOverlay')closeForm();});
+
+  q('#todayToggle')?.addEventListener('click',()=>{
+    todayToggleVal=!todayToggleVal;
+    q('#fAddToday').value=todayToggleVal?'1':'0';
+    q('#todayToggle').classList.toggle('on',todayToggleVal);
+  });
+  if(q('#todayToggle'))todayToggleVal=q('#fAddToday')?.value==='1';
+
+  q('#micBtn')?.addEventListener('click',()=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){alert('Speech recognition not available.');return;}
+    if(recognition){recognition.stop();recognition=null;q('#micBtn').classList.remove('recording');return;}
+    recognition=new SR();recognition.lang='en-US';recognition.interimResults=false;
+    recognition.onresult=e=>{
+      const txt=e.results[0][0].transcript;
+      const ti=q('#fTitle');
+      if(!ti.value.trim())ti.value=txt;else{const n=q('#fNote');n.value=n.value?n.value+' '+txt:txt;}
+      q('#micBtn').classList.remove('recording');recognition=null;
+    };
+    recognition.onerror=recognition.onend=()=>{q('#micBtn')?.classList.remove('recording');recognition=null;};
+    recognition.start();q('#micBtn').classList.add('recording');
+  });
+
+  q('#imgUploadBtn')?.addEventListener('click',()=>q('#imgFile')?.click());
+  q('#imgFile')?.addEventListener('change',e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      formScreenshot=ev.target.result;q('#fScreenshot').value=formScreenshot;
+      const prev=q('#imgPreview');
+      if(prev.tagName==='IMG')prev.src=formScreenshot;
+      else{const img=document.createElement('img');img.className='img-preview';img.src=formScreenshot;prev.replaceWith(img);}
+      q('#imgUploadBtn').textContent='📷 Change Image';
+    };reader.readAsDataURL(file);
+  });
+
+  q('#addMsBtn')?.addEventListener('click',()=>{
+    syncMs();
+    formMilestones.push({title:'',dueDate:'',estimatedMins:'',priority:'medium',notes:'',done:false});
+    q('#msContainer').innerHTML=formMilestones.map((m,i)=>buildMsEditor(m,i)).join('');
+    bindMsEvents();
+  });
+  bindMsEvents();
+  q('#saveBtn')?.addEventListener('click',saveTask);
+  bindTaskEvents();
+  q('#lightbox')?.addEventListener('click',()=>{state.lightbox=null;render();});
+}
+
+function bindMsEvents(){
+  qa('[data-rms]').forEach(el=>el.addEventListener('click',()=>{
+    syncMs();formMilestones.splice(parseInt(el.dataset.rms),1);
+    q('#msContainer').innerHTML=formMilestones.map((m,i)=>buildMsEditor(m,i)).join('');bindMsEvents();
+  }));
+  qa('[data-mf]').forEach(el=>{
+    el.addEventListener('input',syncMs);el.addEventListener('change',syncMs);
+  });
+}
+
+function syncMs(){
+  qa('[data-mi]').forEach(el=>{
+    const i=parseInt(el.dataset.mi),f=el.dataset.mf;
+    if(formMilestones[i])formMilestones[i][f]=el.value;
+  });
+}
+
+function bindTaskEvents(){
+  qa('[data-toggle]').forEach(el=>el.addEventListener('click',()=>{
+    const id=el.dataset.toggle;
+    state.tasks=state.tasks.map(t=>t.id===id?{...t,done:!t.done,progress:!t.done?100:0}:t);
+    save();render();
+  }));
+  qa('[data-mst]').forEach(el=>el.addEventListener('click',()=>{
+    const tid=el.dataset.mst,mi=parseInt(el.dataset.msi);
+    state.tasks=state.tasks.map(t=>{
+      if(t.id!==tid)return t;
+      const ms=[...(t.milestones||[])];ms[mi]={...ms[mi],done:!ms[mi].done};return{...t,milestones:ms};
+    });save();render();
+  }));
+  qa('[data-today]').forEach(el=>el.addEventListener('click',()=>{
+    const id=el.dataset.today;
+    state.todayIds=state.todayIds.includes(id)?state.todayIds.filter(i=>i!==id):[...state.todayIds,id];
+    save();render();
+  }));
+  qa('[data-edit]').forEach(el=>el.addEventListener('click',()=>{
+    state.editId=el.dataset.edit;state.showForm=true;
+    const task=state.tasks.find(t=>t.id===state.editId);
+    formMilestones=JSON.parse(JSON.stringify(task?.milestones||[]));
+    formScreenshot=task?.screenshot||'';render();
+  }));
+  qa('[data-del]').forEach(el=>el.addEventListener('click',()=>{
+    if(!confirm('Delete this task?'))return;
+    const id=el.dataset.del;
+    state.tasks=state.tasks.filter(t=>t.id!==id);
+    state.todayIds=state.todayIds.filter(i=>i!==id);
+    save();render();
+  }));
+  qa('[data-lightbox]').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();state.lightbox=el.dataset.lightbox;render();
+  }));
+}
+
+function closeForm(){state.showForm=false;state.editId=null;formMilestones=[];formScreenshot='';render();}
+
+function saveTask(){
+  syncMs();
+  const title=q('#fTitle')?.value?.trim();
+  if(!title){q('#fTitle').style.borderColor='#ef4444';return;}
+  const isEdit=!!state.editId;
+  const existing=isEdit?state.tasks.find(t=>t.id===state.editId):null;
+  const addToday=q('#fAddToday')?.value==='1';
+  const task={
+    id:isEdit?state.editId:uid(),title,
+    category:q('#fCat')?.value||'other',
+    priority:q('#fPri')?.value||'medium',
+    dueDate:q('#fDue')?.value||'',
+    estimatedMins:parseInt(q('#fMins')?.value)||0,
+    voiceNote:q('#fNote')?.value?.trim()||'',
+    screenshot:q('#fScreenshot')?.value||'',
+    milestones:formMilestones.filter(m=>m.title?.trim()).map(m=>({...m,estimatedMins:parseInt(m.estimatedMins)||0,done:m.done||false})),
+    done:existing?.done||false,progress:existing?.progress||0,
+    createdAt:existing?.createdAt||todayStr(),
+  };
+  if(isEdit)state.tasks=state.tasks.map(t=>t.id===task.id?task:t);
+  else state.tasks=[...state.tasks,task];
+  if(addToday&&!state.todayIds.includes(task.id))state.todayIds=[...state.todayIds,task.id];
+  save();closeForm();
+}
+
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
+function exportBackup(){
+  const data={tasks:state.tasks,todayIds:state.todayIds,exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const date=new Date().toISOString().slice(0,10);
+  a.href=url;a.download=`clarity-backup-${date}.json`;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('✅ Backup saved!');
+}
+
+function importBackup(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data.tasks))throw new Error('Invalid file');
+      const merge=confirm(`Import ${data.tasks.length} tasks?\n\nChoose OK to MERGE with existing tasks, or Cancel to abort.\n\nTo REPLACE all tasks instead, first export a backup then import fresh.`);
+      if(!merge)return;
+      // Merge: add tasks that don't already exist by id
+      const existingIds=new Set(state.tasks.map(t=>t.id));
+      const newTasks=data.tasks.filter(t=>!existingIds.has(t.id));
+      state.tasks=[...state.tasks,...newTasks];
+      // Merge todayIds
+      const existingToday=new Set(state.todayIds);
+      (data.todayIds||[]).forEach(id=>existingToday.add(id));
+      state.todayIds=[...existingToday];
+      save();render();
+      showToast(`✅ Imported ${newTasks.length} new tasks!`);
+    }catch{
+      alert('❌ Invalid backup file. Please use a Clarity .json export.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showToast(msg){
+  const old=document.querySelector('.toast');if(old)old.remove();
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+}
+
+function q(s){return document.querySelector(s);}
+function qa(s){return[...document.querySelectorAll(s)];}
+
+load();render();
+</script>
+</body>
+</html>
